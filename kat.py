@@ -67,3 +67,16 @@ class Kat:
 			result.append(info)
 
 		return result
+
+	def refresh(self):
+		r = requests.get(SITE)
+		kat = BeautifulSoup(r.text)
+		
+		table = kat.findAll("table", "data")
+		movies = table[0]
+		series = table[1]
+		self.movie = movies.findAll("tr")
+		self.movie.pop(0)
+
+		self.serie = series.findAll("tr")
+		self.serie.pop(0)

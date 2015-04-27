@@ -9,12 +9,13 @@ DOWNLOAD_PATH = "/home/Downloads/"
 class MAIN():
     def __init__(self, widget):
         palette = [
-                    ("text", "", "", "", "#00d", "g27"),
-                    ("button", "", "", "", "#80f", "#6d8"),
-                    ("div", "", "", "", "#666", "#86d"),
-                    ("torrent", "", "", "", "#008", "#ff8"),
-                    ("pbNormal", "", "", "", "#faf", "#fa6"),
-                    ("pbComplete", "", "", "", "g58", "g27"),
+                    ("search",        "", "", "", "#ff0", "g27"),
+                    ("button",      "", "", "", "#df6", "#006"),
+                    ("div",         "", "", "", "#666", "g19"),
+                    ("torrent",     "", "", "", "#008", "#ff8"),
+                    ("pbNormal",    "", "", "", "g19", "#fa6"),
+                    ("pbComplete",  "", "", "", "g58", "g27"),
+                    ("bg",          "", "", "", "#a88", "g15")
                   ]
         self.widget = widget
         self.loop = ur.MainLoop(self.widget, palette=palette, unhandled_input=self.input_filter)
@@ -34,61 +35,125 @@ class MAIN():
         self.loop.run()
 
 
-
-class torrentWindow(ur.ListBox):
+class torrentWindow(ur.Pile):
 
     def __init__(self):
-        
-        self.display = []
-        self.text = ur.Text("herro mister", 'center')
-        text = ur.AttrMap(self.text, "text")
-        self.display.append(text)
-        kat_ = kat.Kat()
-        torrent = []
-        torrent.extend(kat_.movies())
-        torrent.extend(kat_.series())
-
-
-        for t in torrent:
-            label = t["name"] + " " + t["size"] + " " + t["seed"]
-            button = ur.Button(label, self.show, t["magnet"])
-            put = ur.AttrMap(button, "button")
-            self.display.append(put)
-
-        div = ur.Divider(" ", 1 , 1)
-        inside = ur.AttrMap(div, "div")
-        self.display.append(inside)
-
+        self.kat_ = kat.Kat()
         self.session = libtorrent.session()
         self.session.listen_on(6881, 6891)
         self.handle = []
 
-        super(torrentWindow, self).__init__(ur.SimpleFocusListWalker(self.display))
+        self.moviesList = ListTorrent(self.kat_.movies(), self.addTorrent)
+        self.seriesList = ListTorrent(self.kat_.series(), self.addTorrent)
+        m = ur.BoxAdapter(self.moviesList, 10)
+        s = ur.BoxAdapter(self.seriesList, 10)
 
-    def show(self, button, magnet):
-        text = ur.Text(button.label)
-        self.body.pop(self.focus_position)
-        textGrid = ur.AttrMap(text, "torrent")
+        self.searchBox = ur.BoxAdapter(ListTorrent([], self.addTorrent),20)
+        self.downloadTorrent = ur.BoxAdapter(DownloadTorrent(), 10)
 
-        pb = ur.ProgressBar("pbNormal", "pbComplete")
-        grid = ur.GridFlow([pb, textGrid], 119, 0, 0, "center")
-        self.body.append(grid)
+        self.newStuff = ur.Columns([m, s], 1)
+        search_ = Search(("search --> "))
+        ur.connect_signal(search_, "search", self.search)
+
+        super(torrentWindow, self).__init__([
+                                                ur.AttrMap(ur.Divider(), "div"),
+                                                self.newStuff, 
+                                                ur.AttrMap(ur.Divider(), "div"),
+                                                ur.AttrMap(search_, "search"), 
+                                                ur.AttrMap(ur.Divider(), "div"),
+                                                self.searchBox, 
+                                                ur.AttrMap(ur.Divider(), "div"), 
+                                                self.downloadTorrent])
+
+
+    def addTorrent(self, button, magnet):
 
         params = {"save_path": DOWNLOAD_PATH, "link": magnet}
         handle = libtorrent.add_magnet_uri(self.session, magnet, params)
-        self.handle.append((handle, pb))
+        self.downloadTorrent.original_widget.add(handle)
+
+    def search(self, request):
+
+        result = self.kat_.search(request)
+        self.searchBox.original_widget = ListTorrent(result, self.addTorrent)
+
+    def keypress(self, size, key):
+        if key == "f5":
+            self.kat_.refresh()
+            moviesList = ListTorrent(self.kat_.movies(), self.addTorrent)
+            seriesList = ListTorrent(self.kat_.series(), self.addTorrent)
+            m = ur.BoxAdapter(moviesList, 10)
+            s = ur.BoxAdapter(seriesList, 10)
+            index = self.widget_list.index(self.newStuff)
+            self.widget_list.remove(self.newStuff)
+            self.newStuff = ur.Columns([m, s], 1)
+            self.widget_list.insert(index, self.newStuff)
+        return ur.Pile.keypress(self, size, key)
 
     def refresh(self):
-        for (handle, progressBar) in self.handle:
-            if handle.has_metadata():
-                if handle.status().state != libtorrent.torrent_status.seeding:
-                    progressBar.set_completion(handle.status().progress * 100)
-                if handle.status().progress == 1:
+        self.downloadTorrent.original_widget.refresh()
+
+class Search(ur.Edit):
+
+    def __init__(self, text):
+        ur.register_signal(Search, ["search"])
+        super(Search, self).__init__(text)
+
+    def keypress(self, size, key):
+        if key == "enter":
+            ur.emit_signal(self, "search", self.get_edit_text())
+        return ur.Edit.keypress(self, size, key)
+
+
+class ListTorrent(ur.ListBox):
+
+    def __init__(self, liste, callback):
+        
+        display = []
+        for t in liste:
+            label = t["name"] + " " + t["size"] + " " + t["seed"]
+            button = ur.Button(label, callback, t["magnet"])
+            put = ur.AttrMap(button, "button")
+            display.append(put)
+
+        super(ListTorrent, self).__init__(ur.SimpleFocusListWalker(display))
+
+
+class DownloadTorrent(ur.ListBox):
+
+    def __init__(self):
+        self.torrent = []
+        super(DownloadTorrent, self).__init__(ur.SimpleFocusListWalker([]))
+
+    def add(self, torrent):
+        pb = ur.ProgressBar("pbNormal", "pbComplete")
+        title = ur.Text(repr(torrent.name()))
+        self.torrent.append((torrent, pb))
+        row = ur.Columns([pb, title])
+        self.body.append(row)
+        
+
+    def refresh(self):
+        for (torrent, progressBar) in self.torrent:
+            if torrent.has_metadata():
+                if torrent.status().state != libtorrent.torrent_status.seeding:
+                    progressBar.set_completion(torrent.status().progress * 100)
+
+                if torrent.status().progress == 1:
                     progressBar.set_completion(1)
-                    self.handle.remove((handle, progressBar))
+                    self.torrent.remove((torrent, progressBar))
+
+class wrapper(ur.Filler):
+
+    def __init__(self, widget):
+        self.widget = widget
+        super(wrapper, self).__init__(ur.AttrMap(widget,"bg"))
+
+    def refresh(self):
+        self.widget.refresh()
 
 
-widget = torrentWindow()
+widget = wrapper(torrentWindow())
 window = MAIN(widget)
 window.run()
 
