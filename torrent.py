@@ -3,6 +3,7 @@ import urwid as ur
 import os
 import libtorrent
 import kat
+import time
 
 DOWNLOAD_PATH = "/home/Downloads/"
 
@@ -54,8 +55,12 @@ class torrentWindow(ur.Pile):
         self.newStuff = ur.Columns([m, s], 1)
         search_ = Search(("search --> "))
         ur.connect_signal(search_, "search", self.search)
+        
+        self.time = ur.Text(time.strftime("%d/%m/%Y %H:%M:%S"))
 
+        
         super(torrentWindow, self).__init__([
+                                                ur.AttrMap(self.time, "search"),
                                                 ur.AttrMap(ur.Divider(), "div"),
                                                 self.newStuff, 
                                                 ur.AttrMap(ur.Divider(), "div"),
@@ -88,6 +93,7 @@ class torrentWindow(ur.Pile):
             self.widget_list.remove(self.newStuff)
             self.newStuff = ur.Columns([m, s], 1)
             self.widget_list.insert(index, self.newStuff)
+            self.time.set_text(time.strftime("%d/%m/%Y %H:%M:%S"))
         return ur.Pile.keypress(self, size, key)
 
     def refresh(self):
