@@ -5,7 +5,7 @@ import libtorrent
 import kat
 import time
 
-DOWNLOAD_PATH = "/home/Downloads/"
+DOWNLOAD_PATH = "/home/koki/Downloads/"
 
 class MAIN():
     def __init__(self, widget):
@@ -146,7 +146,7 @@ class DownloadTorrent(ur.ListBox):
                     progressBar.set_completion(torrent.status().progress * 100)
 
                 if torrent.status().progress == 1:
-                    progressBar.set_completion(1)
+                    progressBar.set_completion(100)
                     self.torrent.remove((torrent, progressBar))
 
 class wrapper(ur.Filler):
