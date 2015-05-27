@@ -1,5 +1,5 @@
 # torrentClient
-CLI that search and download torrent
+CLI that search and download torrent<br>
 in order for it to work you need to install some libraries in python3:
 - urwid
 - zmq (binding for python3)
