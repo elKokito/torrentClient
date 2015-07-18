@@ -5,7 +5,8 @@ import argparse
 import os
 from collections import namedtuple
 
-with open('./config.json') as conf:
+home = os.path.dirname(os.path.realpath(__file__))
+with open(home + '/config.json') as conf:
     config = json.load(conf)
 d = namedtuple('config', config['download'].keys())
 download_path = d(**config['download'])
