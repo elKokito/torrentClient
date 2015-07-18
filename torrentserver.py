@@ -3,9 +3,12 @@ import json
 import libtorrent
 import argparse
 import os
+from collections import namedtuple
 
-
-DOWNLOAD_PATH = os.getenv("HOME") + "/Downloads/"
+with open('./config.json') as conf:
+    config = json.load(conf)
+d = namedtuple('config', config['download'].keys())
+download_path = d(**config['download'])
 
 
 class Server:
@@ -37,6 +40,12 @@ class Server:
             elif msg["call"] == "addTorrent":
                 self.addTorrent(msg["torrent"])
 
+            elif msg["call"] == "addTorrentMovie":
+                self.addTorrentMovie(msg["torrent"])
+
+            elif msg["call"] == "addTorrentSerie":
+                self.addTorrentSerie(msg["torrent"])
+
             elif msg["call"] == "getList":
                 self.getList()
 
@@ -50,7 +59,27 @@ class Server:
         self.socket.send_string(json.dumps(msg))
 
     def addTorrent(self, info):
-        params = {"save_path": DOWNLOAD_PATH, "link": info["magnet"]}
+        params = {"save_path": download_path.default, "link": info["magnet"]}
+        handle = libtorrent.add_magnet_uri(self.session, info["magnet"], params)
+        self.torrent.append((info["title"], handle))
+        msg = {"res": "ok"}
+        if self.verbose:
+            print("sending:")
+            print(msg)
+        self.socket.send_string(json.dumps(msg))
+
+    def addTorrentMovie(self, info):
+        params = {"save_path": download_path.movie, "link": info["magnet"]}
+        handle = libtorrent.add_magnet_uri(self.session, info["magnet"], params)
+        self.torrent.append((info["title"], handle))
+        msg = {"res": "ok"}
+        if self.verbose:
+            print("sending:")
+            print(msg)
+        self.socket.send_string(json.dumps(msg))
+
+    def addTorrentSerie(self, info):
+        params = {"save_path": download_path.serie, "link": info["magnet"]}
         handle = libtorrent.add_magnet_uri(self.session, info["magnet"], params)
         self.torrent.append((info["title"], handle))
         msg = {"res": "ok"}

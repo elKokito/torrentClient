@@ -10,6 +10,8 @@ class StrikeClient:
         if res['statuscode'] == 404:
             return {'result': None}
         res['torrents'].sort(key=lambda t: t['seeds'], reverse=True)
+        for item in res['torrents']:
+            item['size'] = self._getSize(item['size'])
         return {'result': res['torrents']}
 
     def searchTV(self, query):
@@ -19,6 +21,8 @@ class StrikeClient:
         if res['statuscode'] == 404:
             return {'result': None}
         res['torrents'].sort(key=lambda t: t['seeds'], reverse=True)
+        for item in res['torrents']:
+            item['size'] = self._getSize(item['size'])
         return {'result': res['torrents']}
 
     def searchMovie(self, query):
@@ -28,6 +32,8 @@ class StrikeClient:
         if res['statuscode'] == 404:
             return {'result': None}
         res['torrents'].sort(key=lambda t: t['seeds'], reverse=True)
+        for item in res['torrents']:
+            item['size'] = self._getSize(item['size'])
         return {'result': res['torrents']}
 
     def searchMusic(self, query):
@@ -37,4 +43,12 @@ class StrikeClient:
         if res['statuscode'] == 404:
             return {'result': None}
         res['torrents'].sort(key=lambda t: t['seeds'], reverse=True)
+        for item in res['torrents']:
+            item['size'] = self._getSize(item['size'])
         return {'result': res['torrents']}
+
+    def _getSize(self, size):
+        if size/(1000*1000) > 1000:
+            return str(size/(1000*1000*1000)) + "Gb"
+        else:
+            return str(size/(1000*1000)) + "Mb"
