@@ -119,8 +119,8 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
-            res['result']['path'] = None
-            body = list(map(self.makeResultList, res['result']))
+            body = self.makeResultList(res['result'])
+            #body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
 
@@ -129,8 +129,9 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
-            res['result']['path'] = 'addTorrentSerie'
-            body = list(map(self.makeResultList, res['result']))
+            body = self.makeResultList(res['result'], 'addTorrentSerie')
+            #res['result']['path'] = 'addTorrentSerie'
+            #body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
 
@@ -139,8 +140,8 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
-            res["result"]['path'] = 'addTorrentMovie'
-            body = list(map(self.makeResultList, res['result']))
+            body = self.makeResultList(res['result'], 'addTorrentMovie')
+            #body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
 
@@ -149,8 +150,8 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
-            res['result']['path'] = None
-            body = list(map(self.makeResultList, res['result']))
+            body = self.makeResultList(res['result'])
+            #body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
 
@@ -158,13 +159,17 @@ class StrikeWindow(urwid.ListBox):
         self.body.clear()
         self.body.append(widget)
 
-    def makeResultList(self, torrent):
-        title = urwid.Button(repr(torrent['torrent_title']), self.addTorrent, {'title': torrent['torrent_title'],
+    def makeResultList(self, torrents, path=None):
+        res = []
+        for torrent in torrents:
+            title = urwid.Button(repr(torrent['torrent_title']), self.addTorrent, {'title': torrent['torrent_title'],
                                                                                'magnet': torrent['magnet_uri'],
-                                                                               'path': torrent['path']})
-        size = urwid.Text(repr(torrent['size']), 'center')
-        seed = urwid.Text(repr(torrent['seeds']), 'center')
-        return urwid.Columns([title, size, seed])
+                                                                               'path': path})
+            size = urwid.Text(repr(torrent['size']), 'center')
+            seed = urwid.Text(repr(torrent['seeds']), 'center')
+            res.append(urwid.Columns([title, size, seed])
+
+        return res
 
     def addTorrent(self, button, info):
         urwid.emit_signal(self, 'addTorrent', info)
