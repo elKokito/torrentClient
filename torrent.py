@@ -56,7 +56,10 @@ class MAIN():
             self.loop.draw_screen()
 
     def addTorrent(self, torrent):
-        self.torrent.addTorrent(torrent)
+        if 'path' in torrent.keys() and torrent['path']:
+            self.torrent.addTorrent(torrent, torrent['path'])
+        else:
+            self.torrent.addTorrent(torrent)
 
     def run(self):
         self.loop.run()
@@ -106,16 +109,17 @@ class StrikeWindow(urwid.ListBox):
         urwid.connect_signal(searchMovie, 'search', self._searchMovie)
         searchMusic = SearchWidget('Search Music----> ')
         urwid.connect_signal(searchMusic, 'search', self._searchMusic)
-        return [urwid.BoxAdapter(search, 5),
-                urwid.BoxAdapter(searchTV, 5),
-                urwid.BoxAdapter(searchMovie, 5),
-                urwid.BoxAdapter(searchMusic, 5)]
+        return [urwid.BoxAdapter(search, 2),
+                urwid.BoxAdapter(searchTV, 2),
+                urwid.BoxAdapter(searchMovie, 2),
+                urwid.BoxAdapter(searchMusic, 2)]
 
     def _search(self, query):
         res = self.st.search(query)
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
+            res['result']['path'] = None
             body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
@@ -125,6 +129,7 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
+            res['result']['path'] = 'addTorrentSerie'
             body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
@@ -134,6 +139,7 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
+            res["result"]['path'] = 'addTorrentMovie'
             body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
@@ -143,6 +149,7 @@ class StrikeWindow(urwid.ListBox):
         if not res['result']:
             self.showResult(urwid.Text('nothing found', 'center'))
         else:
+            res['result']['path'] = None
             body = list(map(self.makeResultList, res['result']))
             self.showResult(urwid.Pile(body))
         self.body.append(urwid.Text(repr(query)))
@@ -153,7 +160,8 @@ class StrikeWindow(urwid.ListBox):
 
     def makeResultList(self, torrent):
         title = urwid.Button(repr(torrent['torrent_title']), self.addTorrent, {'title': torrent['torrent_title'],
-                                                                               'magnet': torrent['magnet_uri']})
+                                                                               'magnet': torrent['magnet_uri'],
+                                                                               'path': torrent['path']})
         size = urwid.Text(repr(torrent['size']), 'center')
         seed = urwid.Text(repr(torrent['seeds']), 'center')
         return urwid.Columns([title, size, seed])
@@ -182,15 +190,30 @@ class KatWindow(urwid.ListBox):
         super(KatWindow, self).__init__(urwid.SimpleFocusListWalker(body))
 
     def initializeView(self):
-        movie = list(map(self.mapTorrent, self.kat.movies()))
-        serie = list(map(self.mapTorrent, self.kat.series()))
+        movie = []
+        for m in self.kat.movies():
+            m['path'] = 'addTorrentMovie'
+            c1 = urwid.Button(m['title'], self.addTorrent, m)
+            c2 = urwid.Text(repr(m['seed']))
+            c3 = urwid.Text(repr(m['size']))
+            movie.append(urwid.Columns([c1, c2, c3]))
+
+        serie = []
+        for s in self.kat.series():
+            s['path'] = 'addTorrentSerie'
+            c1 = urwid.Button(s['title'], self.addTorrent, s)
+            c2 = urwid.Text(repr(s['seed']))
+            c3 = urwid.Text(repr(s['size']))
+            serie.append(urwid.Columns([c1, c2, c3]))
+        #movie = list(map(self.mapTorrent, self.kat.movies()))
+        #serie = list(map(self.mapTorrent, self.kat.series()))
         body = [urwid.Columns([urwid.Pile(movie), urwid.Pile(serie)]), urwid.BoxAdapter(self.search, 1)]
         return body
 
-    def mapTorrent(self, movie):
-        c1 = urwid.Button(movie['title'], self.addTorrent, movie)
-        c2 = urwid.Text(repr(movie['seed']))
-        c3 = urwid.Text(repr(movie['size']))
+    def mapTorrent(self, torrent):
+        c1 = urwid.Button(torrent['title'], self.addTorrent, torrent)
+        c2 = urwid.Text(repr(torrent['seed']))
+        c3 = urwid.Text(repr(torrent['size']))
         return urwid.Columns([c1, c2, c3])
 
     def addTorrent(self, button, torrent):
@@ -246,7 +269,8 @@ class YtsWindow(urwid.ListBox):
 
     def addTorrent(self, button, torrent):
         info = {"title": torrent["movie"]["title"],
-                "magnet": self.tm.getMagnet(torrent["torrent"])}
+                "magnet": self.tm.getMagnet(torrent["torrent"]),
+                "path": "addTorrentMovie"}
         urwid.emit_signal(self, 'addTorrent', info)
 
     def makeSearch(self, search):
@@ -294,8 +318,11 @@ class TorrentWindow(urwid.ListBox):
             body.append(urwid.Columns([progressBar, title]))
         return body
 
-    def addTorrent(self, info):
-        msg = {"call": "addTorrent", "torrent": info}
+    def addTorrent(self, info, path=None):
+        if path:
+            msg = {"call": path, "torrent": info}
+        else:
+            msg = {"call": "addTorrent", "torrent": info}
         msg = json.dumps(msg)
         self.socket.send_string(msg)
         self.socket.recv_string()
