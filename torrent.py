@@ -167,7 +167,7 @@ class StrikeWindow(urwid.ListBox):
                                                                                'path': path})
             size = urwid.Text(repr(torrent['size']), 'center')
             seed = urwid.Text(repr(torrent['seeds']), 'center')
-            res.append(urwid.Columns([title, size, seed])
+            res.append(urwid.Columns([title, size, seed]))
 
         return res
 
