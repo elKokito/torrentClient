@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
+import threading
+from queue import Queue
 
 SITE = "https://kickass.to"
 
@@ -19,31 +21,80 @@ class Kat:
         self.serie = series.findAll("tr")
         self.serie.pop(0)
 
+        self.lock = threading.Lock()
+        self.queue = None
+        self.resultMovie = []
+        self.resultSerie = []
+
     def movies(self):
+        self.queue = Queue()
+        self.resultMovie = []
 
-        result = []
-        for entrie in self.movie:
-            info = {}
-            info["title"] = entrie.find('a', class_="cellMainLink").text
-            info["size"] = entrie.find("td", class_="nobr center").text
-            info["seed"] = entrie.find("td", class_="green center").text
-            info["magnet"] = self.getTorrentMagnet_(entrie.find('a', class_="cellMainLink").get("href"))
-            result.append(info)
+        for i in range(len(self.movie)):
+            t = threading.Thread(target=self.concatResultMovie)
+            t.daemon = True
+            t.start()
 
-        return result
+        for movie in self.movie:
+            self.queue.put(movie)
+
+        self.queue.join()
+        return self.resultMovie
 
     def series(self):
+        self.queue = Queue()
+        self.resultSerie = []
 
-        result = []
-        for entrie in self.serie:
+        for i in range(len(self.serie)):
+            t = threading.Thread(target=self.concatResultSerie)
+            t.daemon = True
+            t.start()
+
+        for serie in self.serie:
+            self.queue.put(serie)
+
+        self.queue.join()
+        return self.resultSerie
+
+    def concatResultMovie(self):
+        while True:
+            item = self.queue.get()
+            self._movies(item)
+            self.queue.task_done()
+
+    def concatResultSerie(self):
+        while True:
+            item = self.queue.get()
+            self._series(item)
+            self.queue.task_done()
+
+    def _movies(self, entrie):
+
+        try:
             info = {}
             info["title"] = entrie.find('a', class_="cellMainLink").text
             info["size"] = entrie.find("td", class_="nobr center").text
             info["seed"] = entrie.find("td", class_="green center").text
             info["magnet"] = self.getTorrentMagnet_(entrie.find('a', class_="cellMainLink").get("href"))
-            result.append(info)
 
-        return result
+            with self.lock:
+                self.resultMovie.append(info)
+        except:
+            pass
+
+    def _series(self, entrie):
+
+        try:
+            info = {}
+            info["title"] = entrie.find('a', class_="cellMainLink").text
+            info["size"] = entrie.find("td", class_="nobr center").text
+            info["seed"] = entrie.find("td", class_="green center").text
+            info["magnet"] = self.getTorrentMagnet_(entrie.find('a', class_="cellMainLink").get("href"))
+            with self.lock:
+                self.resultSerie.append(info)
+
+        except:
+            pass
 
     def getTorrentMagnet_(self, link):
         torrent = requests.get(SITE + link)
