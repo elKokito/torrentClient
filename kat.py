@@ -1,25 +1,24 @@
-from bs4 import BeautifulSoup
+from pyquery import PyQuery as pq
 import requests
 import threading
 from queue import Queue
 
-SITE = "https://kickass.to"
+SITE = "http://kat.cr"
 
 
 class Kat:
 
     def __init__(self):
         r = requests.get(SITE)
-        kat = BeautifulSoup(r.text)
+        d = pq(r.content)
+        movies = pq(d("div.mainpart table.doublecelltable table.data.frontPageWidget")[0])
+        series = pq(d("div.mainpart table.doublecelltable table.data.frontPageWidget")[1])
 
-        table = kat.findAll("table", "data")
-        movies = table[0]
-        series = table[1]
-        self.movie = movies.findAll("tr")
-        self.movie.pop(0)
+        self.movie = list(movies.find(".odd"))
+        self.movie.extend(movies.find(".even"))
 
-        self.serie = series.findAll("tr")
-        self.serie.pop(0)
+        self.serie = list(series.find(".odd"))
+        self.serie.extend(series.find(".even"))
 
         self.lock = threading.Lock()
         self.queue = None
@@ -72,10 +71,11 @@ class Kat:
 
         try:
             info = {}
-            info["title"] = entrie.find('a', class_="cellMainLink").text
-            info["size"] = entrie.find("td", class_="nobr center").text
-            info["seed"] = entrie.find("td", class_="green center").text
-            info["magnet"] = self.getTorrentMagnet_(entrie.find('a', class_="cellMainLink").get("href"))
+            item = pq(entrie)
+            info["title"] = item.find("a.cellMainLink").text()
+            info["size"] = item.find("td.nobr.center").text()
+            info["seed"] = item.find("td.green.center").text()
+            info["magnet"] = self.getTorrentMagnet_(item.find("a.cellMainLink").attr("href"))
 
             with self.lock:
                 self.resultMovie.append(info)
@@ -86,10 +86,12 @@ class Kat:
 
         try:
             info = {}
-            info["title"] = entrie.find('a', class_="cellMainLink").text
-            info["size"] = entrie.find("td", class_="nobr center").text
-            info["seed"] = entrie.find("td", class_="green center").text
-            info["magnet"] = self.getTorrentMagnet_(entrie.find('a', class_="cellMainLink").get("href"))
+            item = pq(entrie)
+            info["title"] = item.find("a.cellMainLink").text()
+            info["size"] = item.find("td.nobr.center").text()
+            info["seed"] = item.find("td.green.center").text()
+            info["magnet"] = self.getTorrentMagnet_(item.find("a.cellMainLink").attr("href"))
+
             with self.lock:
                 self.resultSerie.append(info)
 
@@ -98,37 +100,36 @@ class Kat:
 
     def getTorrentMagnet_(self, link):
         torrent = requests.get(SITE + link)
-        torrent = BeautifulSoup(torrent.text)
-        torrent = torrent.find("a", class_="siteButton giantIcon magnetlinkButton").get("href")
-        return torrent
+        torrent = pq(torrent.content)
+        magnet = torrent.find(".kaGiantButton[title='Magnet link']").attr("href")
+        return magnet
 
     def search(self, query):
         r = requests.get(SITE + "/usearch/" + query + "/")
-        dom = BeautifulSoup(r.text)
-        table = dom.find("table", class_="data")
-        row = table.findAll("tr")
+        dom = pq(r.content)
+        table = dom.find("table.data")
+        row = table.find("tr")
         row.pop(0)
 
         result = []
         for entrie in row:
             info = {}
-            info["magnet"] = entrie.find("a", class_="imagnet icon16").get("href")
-            info["title"] = entrie.find("a", class_="cellMainLink").text
-            info["size"] = entrie.find("td", class_="nobr center").text
-            info["seed"] = entrie.find("td", class_="green center").text
+            entrie = pq(entrie)
+            info["magnet"] = entrie.find("a[title='Torrent magnet link']").attr("href")
+            info["title"] = entrie.find("a.cellMainLink").text()
+            info["size"] = entrie.find("td.nobr.center").text()
+            info["seed"] = entrie.find("td.green.center").text()
             result.append(info)
 
         return result
 
     def refresh(self):
         r = requests.get(SITE)
-        kat = BeautifulSoup(r.text)
+        d = pq(r.content)
 
-        table = kat.findAll("table", "data")
-        movies = table[0]
-        series = table[1]
-        self.movie = movies.findAll("tr")
-        self.movie.pop(0)
-
-        self.serie = series.findAll("tr")
-        self.serie.pop(0)
+        movies = pq(d("div.mainpart table.doublecelltable table.data.frontPageWidget")[0])
+        series = pq(d("div.mainpart table.doublecelltable table.data.frontPageWidget")[1])
+        self.movie = list(movies.find(".odd"))
+        self.movie.extend(movies.find(".even"))
+        self.serie = list(series.find(".odd"))
+        self.serie.extend(series.find(".even"))
