@@ -3,7 +3,6 @@ import asyncio
 import aiohttp
 import requests
 from pyquery import PyQuery as pq
-import time
 
 # global executor and loop
 executor = ProcessPoolExecutor()
@@ -51,7 +50,6 @@ def kat_parsing(body):
             "type": "movie"
             })
 
-    print("returning from parsing")
 
     series = pq(query("div.mainpart table.doublecelltable table.data.frontPageWidget")[1])
     series_list = list(series.find(".odd"))
@@ -94,9 +92,7 @@ async def pipeline_kat(url):
 
     return result
 
-if __name__ == "__main__":
-
-    start = time.time()
+def launch_scapping():
     tasks = [
             # pirate bay tv shows
             ("https://thepiratebay.se/top/208", pipeline_piratebay),
@@ -106,6 +102,16 @@ if __name__ == "__main__":
             ("http://kickasstorrentsim.com/", pipeline_kat)
             ]
     results = loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
-    stop = time.time()
-    # print(results[0])
-    print(str(stop-start))
+    return results
+
+if __name__ == "__main__":
+
+    tasks = [
+            # pirate bay tv shows
+            ("https://thepiratebay.se/top/208", pipeline_piratebay),
+            # pirate bay movies
+            ("https://thepiratebay.se/top/207", pipeline_piratebay),
+            # kickasstorrent all
+            ("http://kickasstorrentsim.com/", pipeline_kat)
+            ]
+    results = loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
