@@ -1,2 +1,7 @@
 config.json
 __pycache__
+bin/
+share/
+include/
+lib/
+pip-selfcheck.json
