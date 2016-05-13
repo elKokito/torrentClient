@@ -1,8 +1,8 @@
 from concurrent.futures import ProcessPoolExecutor
 import asyncio
 import aiohttp
-import requests
 from pyquery import PyQuery as pq
+import time
 
 # global executor and loop
 executor = ProcessPoolExecutor()
@@ -104,14 +104,37 @@ def launch_scapping():
     results = loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
     return results
 
-if __name__ == "__main__":
+class TorrentGetter:
 
-    tasks = [
-            # pirate bay tv shows
-            ("https://thepiratebay.se/top/208", pipeline_piratebay),
-            # pirate bay movies
-            ("https://thepiratebay.se/top/207", pipeline_piratebay),
-            # kickasstorrent all
-            ("http://kickasstorrentsim.com/", pipeline_kat)
-            ]
-    results = loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
+    def __init__(self):
+        self.last_update = time.time()
+        self.torrents = launch_scapping()
+
+    def _update_if_needed(self):
+        if time.time() - self.last_update > 60*60:
+            self.torrents = launch_scapping()
+            self.last_update = time.time()
+
+        def force_update(self):
+            self.torrents = launch_scapping
+        self.last_update = time.time()
+
+    def get_all_torrents(self):
+        self._update_if_needed()
+        return self.torrents
+
+    def get_movies(self):
+        self._update_if_needed()
+        res = self.torrents[1]
+        for torrent in self.torrents[2]:
+            if torrent['type'] == 'movie':
+                res.append(torrent)
+        return res
+
+    def get_series(self):
+        self._update_if_needed()
+        res = self.torrents[0]
+        for torrent in self.torrents[2]:
+            if torrent['type'] == 'serie':
+                res.append(torrent)
+        return res
