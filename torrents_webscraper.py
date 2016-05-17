@@ -109,6 +109,8 @@ class TorrentGetter:
     def __init__(self):
         self.last_update = time.time()
         self.torrents = launch_scapping()
+        self.executor = ProcessPoolExecutor()
+        self.loop = asyncio.get_event_loop()
 
     def _update_if_needed(self):
         if time.time() - self.last_update > 60*60:
@@ -138,3 +140,29 @@ class TorrentGetter:
             if torrent['type'] == 'serie':
                 res.append(torrent)
         return res
+
+    def search(self, query):
+        self.executor = ProcessPoolExecutor()
+        self.loop = asyncio.get_event_loop()
+        tasks = [
+                # ('http://kickasstorrentsim.com/usearch/' + query, self._pipekat),
+                ('https://thepiratebay.org/search/' + query, self._pipepiratebay)
+                ]
+        # return [0] just until kickasstorrent is ready
+        return self._launch_srcapping(tasks)[0]
+
+    def _launch_srcapping(self, tasks):
+        results = self.loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
+        return results
+
+    async def _pipekat(self, url):
+        body = await aiohttp.get(url)
+        body = await body.text()
+        result = self.loop.run_in_executor(self.executor, kat_parsing, body)
+        return result
+
+    async def _pipepiratebay(self, url):
+        body = await aiohttp.get(url)
+        body = await body.text()
+        result = await self.loop.run_in_executor(self.executor, pirate_bay_parsing, body)
+        return result
