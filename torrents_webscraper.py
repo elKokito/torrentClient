@@ -143,15 +143,16 @@ class TorrentGetter:
 
     def search(self, query):
         self.executor = ProcessPoolExecutor()
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         tasks = [
                 # ('http://kickasstorrentsim.com/usearch/' + query, self._pipekat),
                 ('https://thepiratebay.org/search/' + query, self._pipepiratebay)
                 ]
         # return [0] just until kickasstorrent is ready
-        return self._launch_srcapping(tasks)[0]
+        return self._launch_scrapping(tasks)[0]
 
-    def _launch_srcapping(self, tasks):
+    def _launch_scrapping(self, tasks):
         results = self.loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
         return results
 
