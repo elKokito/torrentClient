@@ -172,3 +172,5 @@ if __name__ == "__main__":
     # print(t.torrents)
 elif __name__ == "__console__":
     PoolExecutor = ThreadPoolExecutor
+else:
+    PoolExecutor = ProcessPoolExecutor
