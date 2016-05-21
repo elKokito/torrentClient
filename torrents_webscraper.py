@@ -103,17 +103,23 @@ class TorrentGetter:
 
     def get_movies(self):
         self._update_if_needed()
-        res = self.torrents[1]
-        for torrent in self.torrents[2]:
-            if torrent['type'] == 'movie':
+        res = []
+        for torrent in self.torrents:
+            if torrent != None and 'type' in torrent:
+                if torrent['type'] == 'movie':
+                    res.append(torrent)
+            else:
                 res.append(torrent)
         return res
 
     def get_series(self):
         self._update_if_needed()
-        res = self.torrents[0]
-        for torrent in self.torrents[2]:
-            if torrent['type'] == 'serie':
+        res = []
+        for torrent in self.torrents:
+            if torrent != None and 'type' in 'torrent':
+                if torrent['type'] == 'serie':
+                    res.append(torrent)
+            else:
                 res.append(torrent)
         return res
 
@@ -161,7 +167,7 @@ class TorrentGetter:
     def _launch_scrapping(self, tasks):
         try:
             results = self.loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
-            return results[0]
+            return results
         except:
             print('error occured in torrent webscrapper')
             print(sys.exc_info()[0])
