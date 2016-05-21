@@ -129,7 +129,7 @@ class TorrentGetter:
         asyncio.set_event_loop(self.loop)
         tasks = [
                 # ('http://kickasstorrentsim.com/usearch/' + query, self._pipekat),
-                ('https://thepiratebay.org/search/' + query, self._pipepiratebay)
+                ('https://thepiratebay.org/search/' + query, self._pipeline_piratebay)
                 ]
         # return [0] just until kickasstorrent is ready
         return self._launch_scrapping(tasks)[0]
