@@ -139,7 +139,9 @@ class TorrentGetter:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
             self.executor = PoolExecutor()
-            self.torrents = self._launch_scrapping(self.default_tasks)
+            new_torrents = self._launch_scrapping(self.default_tasks)
+            if new_torrents != []:
+                self.torrents = new_torrents
             self.last_update = time.time()
 
 
