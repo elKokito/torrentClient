@@ -169,7 +169,7 @@ class TorrentGetter:
     def _launch_scrapping(self, tasks):
         try:
             results = self.loop.run_until_complete(asyncio.gather(*[func(url) for (url, func) in tasks]))
-            return results
+            return results[0]
         except:
             print('error occured in torrent webscrapper')
             print(sys.exc_info()[0])
