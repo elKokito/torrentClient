@@ -131,8 +131,7 @@ class TorrentGetter:
                 # ('http://kickasstorrentsim.com/usearch/' + query, self._pipekat),
                 ('https://thepiratebay.org/search/' + query, self._pipeline_piratebay)
                 ]
-        # return [0] just until kickasstorrent is ready
-        return self._launch_scrapping(tasks)[0]
+        return self._launch_scrapping(tasks)
 
     def _update_if_needed(self):
         if time.time() - self.last_update > 60*60:
