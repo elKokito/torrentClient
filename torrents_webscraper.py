@@ -81,10 +81,11 @@ class TorrentGetter:
         asyncio.set_event_loop(self.loop)
 
         self.default_tasks = [
+                # TODO handle multiple sites
                 # pirate bay tv shows
-                ("https://thepiratebay.se/top/208", self._pipeline_piratebay),
-                # pirate bay movies
-                ("https://thepiratebay.se/top/207", self._pipeline_piratebay),
+                #  ("https://thepiratebay.se/top/208", self._pipeline_piratebay),
+                #  # pirate bay movies
+                #  ("https://thepiratebay.se/top/207", self._pipeline_piratebay),
                 # kickasstorrent all
                 ("http://kickasstorrentsim.com/", self._pipeline_kat)
                 ]
