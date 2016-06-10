@@ -116,12 +116,13 @@ class TorrentGetter:
     def get_series(self):
         self._update_if_needed()
         res = []
-        for torrent in self.torrents:
-            if torrent != None and 'type' in 'torrent':
-                if torrent['type'] == 'serie':
+        if self.torrents:
+            for torrent in self.torrents:
+                if torrent != None and 'type' in 'torrent':
+                    if torrent['type'] == 'serie':
+                        res.append(torrent)
+                else:
                     res.append(torrent)
-            else:
-                res.append(torrent)
         return res
 
     def search(self, query):
